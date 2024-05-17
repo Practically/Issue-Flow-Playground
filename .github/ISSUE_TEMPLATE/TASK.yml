@@ -13,5 +13,3 @@ body:
     attributes:
       label: Description
       description: Please describe the task
-    validations:
-      required: true
