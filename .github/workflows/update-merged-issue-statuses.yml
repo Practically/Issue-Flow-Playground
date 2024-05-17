@@ -34,9 +34,14 @@ jobs:
                 }
               }
             }
+            if (issueNumbers.length === 0) {
+              console.log('No issue numbers found in commits');
+              return '';
+            }
             return issueNumbers.join(' ');
 
       - name: Get issue details
+        if: steps.get-issue-numbers.outputs.result != ''
         uses: actions/github-script@v5
         with:
           script: |
@@ -62,6 +67,7 @@ jobs:
           ISSUES: ${{ env.ISSUES }}
 
       - name: Update issue labels
+        if: steps.get-issue-numbers.outputs.result != ''
         uses: actions/github-script@v5
         with:
           script: |
