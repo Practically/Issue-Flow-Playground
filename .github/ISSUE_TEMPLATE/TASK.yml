@@ -1,0 +1,17 @@
+# Copyright 2024 Practically.io All rights reserved
+
+name: '📝 Task'
+description: |
+  Request a task that needs to be completed for the application.
+
+  A task is something that isn't a bug or implements any new features.
+title: '[Task]: <title>'
+labels: ['type: task', 'status: to do']
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Please describe the task
+    validations:
+      required: true

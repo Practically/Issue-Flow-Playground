@@ -1,0 +1,68 @@
+# Copyright 2023 Practically.io All rights reserved
+
+name: Update Merged Issue Statuses
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-merged-issue-statuses:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get issue numbers
+        id: get-issue-numbers
+        run: |
+          COMMITS=$(jq -r '.commits[] | "\(.id) \(.message)"' <<< '${{ toJson(github.event) }}')
+          echo "Commits: $COMMITS"
+          ISSUES=$(echo "$COMMITS" | grep -oP '(Ref: #\K\d+|Fixes Issue: #\K\d+)' | tr ' ' '\n' | sort -n | uniq)
+          echo "Issues: $ISSUES"
+          echo "ISSUES=$ISSUES" >> $GITHUB_ENV
+
+          - name: Get issue details
+          id: get-issue-details
+          run: |
+            mkdir -p temp
+            for ISSUE in $ISSUES; do
+              ISSUE_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
+              echo "$ISSUE_DETAILS" > temp/issue_$ISSUE.json
+            done
+
+      - name: Update issue labels
+        id: update-issue-labels
+        run: |
+          for ISSUE in $ISSUES; do
+            # Get current labels
+            CURRENT_LABELS=$(curl -s \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels" | jq -r '.[].name')
+
+            # Prepare new labels
+            NEW_LABELS=$(echo "$CURRENT_LABELS" | sed 's/status: to do//;s/status: in progress//' | tr '\n' ' ')
+            NEW_LABELS+="status: in review"
+
+            # Update labels
+            curl -s \
+              -X PUT \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d "{\"labels\": [\"$NEW_LABELS\"]}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels"
+          done
+
+      # - name: Build Slack message
+      #   id: build-slack-message
+      #   run: |
+      #     SLACK_MESSAGE=":rocket: Deployment successful!\n"
+      #     for ISSUE in $ISSUES; do
+      #       ISSUE_DETAILS=$(cat temp/issue_$ISSUE.json)
+      #       TITLE=$(echo "$ISSUE_DETAILS" | jq -r '.title')
+      #       URL=$(echo "$ISSUE_DETAILS" | jq -r '.html_url')
+      #       SLACK_MESSAGE+="- $TITLE (<$URL|#${ISSUE}>)\n"
+      #     done
+      #     echo "SLACK_MESSAGE=$SLACK_MESSAGE" >> $GITHUB_ENV
