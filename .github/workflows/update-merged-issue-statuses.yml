@@ -49,6 +49,9 @@ jobs:
         with:
           script: |
             const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
+
+            console.log(issues);
+
             for (const issue of issues) {
               console.log(issue);
             }
