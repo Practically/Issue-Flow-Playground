@@ -69,35 +69,37 @@ jobs:
                 core.setFailed(error.message);
               }
             }
-      # - name: Update issue labels
-      #   uses: actions/github-script@v5
-      #   with:
-      #     script: |
-      #       const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
-      #       for (const issue of issues) {
-      #         // Get current labels
-      #         const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
-      #           owner: context.repo.owner,
-      #           repo: context.repo.repo,
-      #           issue_number: parseInt(issue)
-      #         });
 
-      #         // Prepare new labels
-      #         let newLabels = currentLabels.map(label => label.name);
-      #         newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress');
-      #         newLabels.push('status: in review');
+      - name: Update issue labels
+        if: steps.get-issue-numbers.outputs.result != ''
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
+            for (const issue of issues) {
+              // Get current labels
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issue)
+              });
 
-      #         // Update labels
-      #         try {
-      #           await github.rest.issues.setLabels({
-      #             owner: context.repo.owner,
-      #             repo: context.repo.repo,
-      #             issue_number: parseInt(issue),
-      #             labels: newLabels
-      #           });
-      #           console.log(`Labels updated successfully for issue ${issue}`);
-      #         } catch (error) {
-      #           console.error(`Error updating labels for issue ${issue}: ${error.message}`);
-      #           core.setFailed(error.message);
-      #         }
-      #       }
+              // Prepare new labels
+              let newLabels = currentLabels.map(label => label.name);
+              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress');
+              newLabels.push('status: in review');
+
+              // Update labels
+              try {
+                await github.rest.issues.setLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issue),
+                  labels: newLabels
+                });
+                console.log(`Labels updated successfully for issue ${issue}`);
+              } catch (error) {
+                console.error(`Error updating labels for issue ${issue}: ${error.message}`);
+                core.setFailed(error.message);
+              }
+            }
