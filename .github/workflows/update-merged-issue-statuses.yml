@@ -27,6 +27,8 @@ jobs:
               const matches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi);
               if (matches) {
                 for (const match of matches) {
+                  console.log(match);
+
                   const issueNumber = match.split('#')[1]; // get the issue number after '#'
                   if (!issueNumbers.includes(issueNumber)) {
                     issueNumbers.push(issueNumber);
@@ -38,6 +40,9 @@ jobs:
               console.log('No issue numbers found in commits');
               return '';
             }
+
+            console.log(issueNumbers);
+
             return issueNumbers.join(' ');
 
       - name: Get issue details
