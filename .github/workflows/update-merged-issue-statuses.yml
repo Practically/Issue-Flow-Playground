@@ -28,9 +28,17 @@ jobs:
         run: |
           mkdir -p temp
           for ISSUE in $ISSUES; do
-            ISSUE_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
-            echo "$ISSUE_DETAILS" > temp/issue_$ISSUE.json
+
+            # Check for errors
+            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+            if [[ -n "$ERROR_MESSAGE" ]]; then
+              echo "Error getting details for issue $ISSUE: $ERROR_MESSAGE"
+              exit 1
+            fi
+
+            echo "$RESPONSE" > temp/issue_$ISSUE.json
           done
 
       - name: Update issue labels
@@ -43,16 +51,23 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels" | jq -r '.[].name')
 
             # Prepare new labels
-            NEW_LABELS=$(echo "$CURRENT_LABELS" | sed 's/status: to do//;s/status: in progress//' | tr '\n' ' ')
+            NEW_LABELS=$(echo "$CURRENT_LABELS" | sed 's/status: to do//;s/status: in progress//' | tr '\n' ' ' | sed 's/^ *//;s/ *$//')
             NEW_LABELS+="status: in review"
 
             # Update labels
-            curl -s \
+            RESPONSE=$(curl -s \
               -X PUT \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
               -d "{\"labels\": [\"$NEW_LABELS\"]}" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels"
+              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels")
+
+            # Check for errors
+            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+            if [[ -n "$ERROR_MESSAGE" ]]; then
+              echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
+              exit 1
+            fi
           done
 
       # - name: Build Slack message
