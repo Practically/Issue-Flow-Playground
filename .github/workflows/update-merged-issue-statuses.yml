@@ -2,10 +2,12 @@
 
 name: Update Merged Issue Statuses
 
-on:
-  push:
-    branches:
-      - main
+on: push
+
+# on:
+#   push:
+#     branches:
+#       - main
 
 jobs:
   update-merged-issue-statuses:
@@ -40,6 +42,8 @@ jobs:
           script: |
             const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
             for (const issue of issues) {
+              console.log(context.repo);
+
               try {
                 // Get issue details
                 const { data: issueDetails } = await github.rest.issues.get({
