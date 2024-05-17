@@ -24,7 +24,7 @@ jobs:
             const commits = context.payload.commits;
             const issueNumbers = [];
             for (const commit of commits) {
-              const matches = commit.message.match(/(Fixes Issue: #|Ref: #)(\d+)/g);
+              const matches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi);
               if (matches) {
                 for (const match of matches) {
                   const issueNumber = match.split('#')[1]; // get the issue number after '#'
@@ -47,8 +47,6 @@ jobs:
           script: |
             const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
             for (const issue of issues) {
-              console.log(context.repo);
-
               try {
                 // Get issue details
                 const { data: issueDetails } = await github.rest.issues.get({
@@ -63,8 +61,6 @@ jobs:
                 core.setFailed(error.message);
               }
             }
-        env:
-          ISSUES: ${{ env.ISSUES }}
 
       - name: Update issue labels
         if: steps.get-issue-numbers.outputs.result != ''
@@ -99,8 +95,6 @@ jobs:
                 core.setFailed(error.message);
               }
             }
-        env:
-          ISSUES: ${{ env.ISSUES }}
 
       # - name: Build Slack message
       #   id: build-slack-message
