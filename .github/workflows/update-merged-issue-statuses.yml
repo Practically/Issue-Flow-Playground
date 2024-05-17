@@ -70,11 +70,14 @@ jobs:
 
             # Check if the response is a valid JSON
             if echo "$RESPONSE" | jq empty > /dev/null 2>&1; then
-                # Extract the "message" field
-                ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-                if [[ -n "$ERROR_MESSAGE" ]]; then
-                  echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
-                  exit 1
+                # Check if the response is an array
+                if echo "$RESPONSE" | jq 'if type=="array" then empty else . end' > /dev/null 2>&1; then
+                    # Extract the "message" field
+                    ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+                    if [[ -n "$ERROR_MESSAGE" ]]; then
+                      echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
+                      exit 1
+                    fi
                 fi
             else
                 echo "Invalid JSON response: $RESPONSE"
