@@ -16,18 +16,29 @@ jobs:
 
       - name: Get issue numbers
         id: get-issue-numbers
-        run: |
-          COMMITS=$(jq -r '.commits[] | "\(.id) \(.message)"' <<< '${{ toJson(github.event) }}')
-          echo "Commits: $COMMITS"
-          ISSUES=$(echo "$COMMITS" | grep -oP '(Ref: #\K\d+|Fixes Issue: #\K\d+)' | tr ' ' '\n' | sort -n | uniq)
-          echo "Issues: $ISSUES"
-          echo "ISSUES=$ISSUES" >> $GITHUB_ENV
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const commits = context.payload.commits;
+            const issueNumbers = [];
+            for (const commit of commits) {
+              const matches = commit.message.match(/(Fixes Issue: #|Ref: #)(\d+)/g);
+              if (matches) {
+                for (const match of matches) {
+                  const issueNumber = match.split('#')[1]; // get the issue number after '#'
+                  if (!issueNumbers.includes(issueNumber)) {
+                    issueNumbers.push(issueNumber);
+                  }
+                }
+              }
+            }
+            return issueNumbers.join(' ');
 
       - name: Get issue details
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = process.env.ISSUES.split(' ');
+            const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
             for (const issue of issues) {
               try {
                 // Get issue details
@@ -50,7 +61,7 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = process.env.ISSUES.split(' ');
+            const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
             for (const issue of issues) {
               // Get current labels
               const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
