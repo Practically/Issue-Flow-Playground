@@ -75,7 +75,8 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = '${{ steps.get-issue-numbers.outputs.result }}'.split(' ');
+            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }};
+
             for (const issue of issues) {
               // Get current labels
               const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
