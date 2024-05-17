@@ -31,11 +31,17 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
 
-            # Check for errors
-            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-            if [[ -n "$ERROR_MESSAGE" ]]; then
-              echo "Error getting details for issue $ISSUE: $ERROR_MESSAGE"
-              exit 1
+            # Check if the response is a valid JSON
+            if echo "$RESPONSE" | jq empty > /dev/null 2>&1; then
+                # Extract the "message" field
+                ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+                if [[ -n "$ERROR_MESSAGE" ]]; then
+                  echo "Error getting details for issue $ISSUE: $ERROR_MESSAGE"
+                  exit 1
+                fi
+            else
+                echo "Invalid JSON response: $RESPONSE"
+                exit 1
             fi
 
             echo "$RESPONSE" > temp/issue_$ISSUE.json
@@ -62,11 +68,17 @@ jobs:
               -d "{\"labels\": [\"$NEW_LABELS\"]}" \
               "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels")
 
-            # Check for errors
-            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-            if [[ -n "$ERROR_MESSAGE" ]]; then
-              echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
-              exit 1
+            # Check if the response is a valid JSON
+            if echo "$RESPONSE" | jq empty > /dev/null 2>&1; then
+                # Extract the "message" field
+                ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+                if [[ -n "$ERROR_MESSAGE" ]]; then
+                  echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
+                  exit 1
+                fi
+            else
+                echo "Invalid JSON response: $RESPONSE"
+                exit 1
             fi
           done
 
