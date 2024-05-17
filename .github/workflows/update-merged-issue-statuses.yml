@@ -32,7 +32,7 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
 
             # Check for errors
-            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.[] | .message // empty')
             if [[ -n "$ERROR_MESSAGE" ]]; then
               echo "Error getting details for issue $ISSUE: $ERROR_MESSAGE"
               exit 1
@@ -63,7 +63,7 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels")
 
             # Check for errors
-            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+            ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.[] | .message // empty')
             if [[ -n "$ERROR_MESSAGE" ]]; then
               echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
               exit 1
