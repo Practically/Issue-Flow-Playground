@@ -24,14 +24,15 @@ jobs:
             const commits = context.payload.commits;
             const issueNumbers = [];
             for (const commit of commits) {
-              const matches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi);
-              if (matches) {
-                for (const match of matches) {
-                  console.log(match);
-
-                  const issueNumber = match.split('#')[1]; // get the issue number after '#'
-                  if (!issueNumbers.includes(issueNumber)) {
-                    issueNumbers.push(issueNumber);
+              const refMatches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi);
+              if (refMatches) {
+                for (const match of refMatches) {
+                  const numberMatches = match.match(/#(\d+)/g);
+                  for (const numberMatch of numberMatches) {
+                    const issueNumber = numberMatch.replace('#', '');
+                    if (!issueNumbers.includes(issueNumber)) {
+                      issueNumbers.push(issueNumber);
+                    }
                   }
                 }
               }
@@ -40,9 +41,6 @@ jobs:
               console.log('No issue numbers found in commits');
               return '';
             }
-
-            console.log(issueNumbers);
-
             return issueNumbers.join(' ');
 
       - name: Get issue details
