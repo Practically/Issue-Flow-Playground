@@ -24,66 +24,62 @@ jobs:
           echo "ISSUES=$ISSUES" >> $GITHUB_ENV
 
       - name: Get issue details
-        id: get-issue-details
-        run: |
-          mkdir -p temp
-          for ISSUE in $ISSUES; do
-            RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const issues = process.env.ISSUES.split(' ');
+            for (const issue of issues) {
+              try {
+                // Get issue details
+                const { data: issueDetails } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue
+                });
 
-            # Check if the response is a valid JSON
-            if echo "$RESPONSE" | jq empty > /dev/null 2>&1; then
-                # Extract the "message" field
-                ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-                if [[ -n "$ERROR_MESSAGE" ]]; then
-                  echo "Error getting details for issue $ISSUE: $ERROR_MESSAGE"
-                  exit 1
-                fi
-            else
-                echo "Invalid JSON response: $RESPONSE"
-                exit 1
-            fi
-
-            echo "$RESPONSE" > temp/issue_$ISSUE.json
-          done
+                console.log(`Details fetched successfully for issue ${issue}`);
+              } catch (error) {
+                console.error(`Error getting details for issue ${issue}: ${error.message}`);
+                core.setFailed(error.message);
+              }
+            }
+        env:
+          ISSUES: ${{ env.ISSUES }}
 
       - name: Update issue labels
-        id: update-issue-labels
-        run: |
-          for ISSUE in $ISSUES; do
-            # Get current labels
-            CURRENT_LABELS=$(curl -s \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels" | jq -r '.[].name')
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const issues = process.env.ISSUES.split(' ');
+            for (const issue of issues) {
+              // Get current labels
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue
+              });
 
-            # Prepare new labels
-            NEW_LABELS=$(echo "$CURRENT_LABELS" | sed 's/status: to do//;s/status: in progress//' | tr '\n' ' ' | sed 's/^ *//;s/ *$//')
-            NEW_LABELS+="status: in review"
+              // Prepare new labels
+              let newLabels = currentLabels.map(label => label.name);
+              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress');
+              newLabels.push('status: in review');
 
-            # Update labels
-            RESPONSE=$(curl -s \
-              -X PUT \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              -d "{\"labels\": [\"$NEW_LABELS\"]}" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE/labels")
-
-            # Check if the response is a valid JSON
-            if echo "$RESPONSE" | jq empty > /dev/null 2>&1; then
-                # Check if the response is an array
-                if echo "$RESPONSE" | jq 'if type=="array" then empty else . end' > /dev/null 2>&1; then
-                    # Extract the "message" field
-                    ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-                    if [[ -n "$ERROR_MESSAGE" ]]; then
-                      echo "Error updating labels for issue $ISSUE: $ERROR_MESSAGE"
-                      exit 1
-                    fi
-                fi
-            else
-                echo "Invalid JSON response: $RESPONSE"
-                exit 1
-            fi
-          done
+              // Update labels
+              try {
+                await github.rest.issues.setLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue,
+                  labels: newLabels
+                });
+                console.log(`Labels updated successfully for issue ${issue}`);
+              } catch (error) {
+                console.error(`Error updating labels for issue ${issue}: ${error.message}`);
+                core.setFailed(error.message);
+              }
+            }
+        env:
+          ISSUES: ${{ env.ISSUES }}
 
       # - name: Build Slack message
       #   id: build-slack-message
