@@ -23,15 +23,15 @@ jobs:
           echo "Issues: $ISSUES"
           echo "ISSUES=$ISSUES" >> $GITHUB_ENV
 
-          - name: Get issue details
-          id: get-issue-details
-          run: |
-            mkdir -p temp
-            for ISSUE in $ISSUES; do
-              ISSUE_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
-              echo "$ISSUE_DETAILS" > temp/issue_$ISSUE.json
-            done
+      - name: Get issue details
+        id: get-issue-details
+        run: |
+          mkdir -p temp
+          for ISSUE in $ISSUES; do
+            ISSUE_DETAILS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE")
+            echo "$ISSUE_DETAILS" > temp/issue_$ISSUE.json
+          done
 
       - name: Update issue labels
         id: update-issue-labels
