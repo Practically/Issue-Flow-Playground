@@ -45,7 +45,7 @@ jobs:
                 const { data: issueDetails } = await github.rest.issues.get({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: issue
+                  issue_number: parseInt(issue)
                 });
 
                 console.log(`Details fetched successfully for issue ${issue}`);
@@ -67,7 +67,7 @@ jobs:
               const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: issue
+                issue_number: parseInt(issue)
               });
 
               // Prepare new labels
@@ -80,7 +80,7 @@ jobs:
                 await github.rest.issues.setLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: issue,
+                  issue_number: parseInt(issue),
                   labels: newLabels
                 });
                 console.log(`Labels updated successfully for issue ${issue}`);
