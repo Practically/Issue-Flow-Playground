@@ -41,6 +41,9 @@ jobs:
               console.log('No issue numbers found in commits');
               return '';
             }
+
+            console.log(JSON.stringify(issueNumbers));
+
             return JSON.stringify(issueNumbers);
 
       - name: Get issue details
@@ -48,7 +51,7 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = JSON.parse('${{ steps.get-issue-numbers.outputs.result }}');
+            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }};
 
             console.log(issues);
 
