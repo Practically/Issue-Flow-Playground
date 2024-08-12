@@ -54,58 +54,58 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            console.log(${{ fromJson(steps.get-issue-numbers.outputs.result) }})
+            console.log('Result:', ${{ fromJson(steps.get-issue-numbers.outputs.result) }})
 
-            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
+            # const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
 
-            console.log(issues)
+            # console.log(issues)
 
-            for (const issue of issues) {
-              try {
-                // Get issue details
-                const { data: issueDetails } = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: parseInt(issue)
-                })
-                console.log(`Details fetched successfully for issue ${issue}`)
-              } catch (error) {
-                console.error(`Error getting details for issue ${issue}: ${error.message}`)
-                core.setFailed(error.message)
-              }
-            }
+            # for (const issue of issues) {
+            #   try {
+            #     // Get issue details
+            #     const { data: issueDetails } = await github.rest.issues.get({
+            #       owner: context.repo.owner,
+            #       repo: context.repo.repo,
+            #       issue_number: parseInt(issue)
+            #     })
+            #     console.log(`Details fetched successfully for issue ${issue}`)
+            #   } catch (error) {
+            #     console.error(`Error getting details for issue ${issue}: ${error.message}`)
+            #     core.setFailed(error.message)
+            #   }
+            # }
 
-      - name: Update issue labels
-        if: steps.get-issue-numbers.outputs.result != ''
-        uses: actions/github-script@v5
-        with:
-          script: |
-            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
+      # - name: Update issue labels
+      #   if: steps.get-issue-numbers.outputs.result != ''
+      #   uses: actions/github-script@v5
+      #   with:
+      #     script: |
+      #       const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
 
-            for (const issue of issues) {
-              // Get current labels
-              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: parseInt(issue)
-              })
+      #       for (const issue of issues) {
+      #         // Get current labels
+      #         const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+      #           owner: context.repo.owner,
+      #           repo: context.repo.repo,
+      #           issue_number: parseInt(issue)
+      #         })
 
-              // Prepare new labels
-              let newLabels = currentLabels.map(label => label.name)
-              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress')
-              newLabels.push('status: in review')
+      #         // Prepare new labels
+      #         let newLabels = currentLabels.map(label => label.name)
+      #         newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress')
+      #         newLabels.push('status: in review')
 
-              // Update labels
-              try {
-                await github.rest.issues.setLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: parseInt(issue),
-                  labels: newLabels
-                })
-                console.log(`Labels updated successfully for issue ${issue}`)
-              } catch (error) {
-                console.error(`Error updating labels for issue ${issue}: ${error.message}`)
-                core.setFailed(error.message)
-              }
-            }
+      #         // Update labels
+      #         try {
+      #           await github.rest.issues.setLabels({
+      #             owner: context.repo.owner,
+      #             repo: context.repo.repo,
+      #             issue_number: parseInt(issue),
+      #             labels: newLabels
+      #           })
+      #           console.log(`Labels updated successfully for issue ${issue}`)
+      #         } catch (error) {
+      #           console.error(`Error updating labels for issue ${issue}: ${error.message}`)
+      #           core.setFailed(error.message)
+      #         }
+      #       }
