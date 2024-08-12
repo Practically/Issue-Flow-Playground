@@ -21,42 +21,42 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const commits = context.payload.commits;
+            const commits = context.payload.commits
 
-            console.log(commits);
+            console.log(commits)
 
-            const issueNumbers = [];
+            const issueNumbers = []
             for (const commit of commits) {
-              const refMatches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi);
+              const refMatches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi)
               if (refMatches) {
                 for (const match of refMatches) {
-                  const numberMatches = match.match(/#(\d+)/g);
+                  const numberMatches = match.match(/#(\d+)/g)
                   for (const numberMatch of numberMatches) {
-                    const issueNumber = numberMatch.replace('#', '');
+                    const issueNumber = numberMatch.replace('#', '')
                     if (!issueNumbers.includes(issueNumber)) {
-                      issueNumbers.push(issueNumber);
+                      issueNumbers.push(issueNumber)
                     }
                   }
                 }
               }
             }
             if (issueNumbers.length === 0) {
-              console.log('No issue numbers found in commits');
-              return '';
+              console.log('No issue numbers found in commits')
+              return ''
             }
 
-            console.log(JSON.stringify(issueNumbers));
+            console.log(JSON.stringify(issueNumbers))
 
-            return JSON.stringify(issueNumbers);
+            return JSON.stringify(issueNumbers)
 
       - name: Get issue details
         if: steps.get-issue-numbers.outputs.result != ''
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }};
+            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
 
-            console.log(issues);
+            console.log(issues)
 
             for (const issue of issues) {
               try {
@@ -65,11 +65,11 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: parseInt(issue)
-                });
-                console.log(`Details fetched successfully for issue ${issue}`);
+                })
+                console.log(`Details fetched successfully for issue ${issue}`)
               } catch (error) {
-                console.error(`Error getting details for issue ${issue}: ${error.message}`);
-                core.setFailed(error.message);
+                console.error(`Error getting details for issue ${issue}: ${error.message}`)
+                core.setFailed(error.message)
               }
             }
 
@@ -78,7 +78,7 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }};
+            const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
 
             for (const issue of issues) {
               // Get current labels
@@ -86,12 +86,12 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: parseInt(issue)
-              });
+              })
 
               // Prepare new labels
-              let newLabels = currentLabels.map(label => label.name);
-              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress');
-              newLabels.push('status: in review');
+              let newLabels = currentLabels.map(label => label.name)
+              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress')
+              newLabels.push('status: in review')
 
               // Update labels
               try {
@@ -100,10 +100,10 @@ jobs:
                   repo: context.repo.repo,
                   issue_number: parseInt(issue),
                   labels: newLabels
-                });
-                console.log(`Labels updated successfully for issue ${issue}`);
+                })
+                console.log(`Labels updated successfully for issue ${issue}`)
               } catch (error) {
-                console.error(`Error updating labels for issue ${issue}: ${error.message}`);
-                core.setFailed(error.message);
+                console.error(`Error updating labels for issue ${issue}: ${error.message}`)
+                core.setFailed(error.message)
               }
             }
