@@ -54,6 +54,8 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
+            console.log(${{ fromJson(steps.get-issue-numbers.outputs.result) }})
+
             const issues = ${{ fromJson(steps.get-issue-numbers.outputs.result) }}
 
             console.log(issues)
