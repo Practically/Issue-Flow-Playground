@@ -10,8 +10,10 @@ on: push
 #       - main
 
 jobs:
-  update-merged-issue-statuses:
+  get-issue-numbers:
     runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.get-issue-numbers.outputs.result }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,7 +25,7 @@ jobs:
           script: |
             const commits = context.payload.commits
 
-            console.log(commits)
+            console.log(`Commits: ${commits}`)
 
             const issueNumbers = []
             for (const commit of commits) {
@@ -40,25 +42,53 @@ jobs:
                 }
               }
             }
+
             if (issueNumbers.length === 0) {
               console.log('No issue numbers found in commits')
               return ''
             }
 
-            console.log(JSON.stringify(issueNumbers))
+            console.log(`Issue numbers found: ${issueNumbers}`)
 
             return JSON.stringify(issueNumbers)
 
-      - name: Get issue details
-        if: steps.get-issue-numbers.outputs.result != ''
+  update-issue-status:
+    runs-on: ubuntu-latest
+    needs: get-issue-numbers
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update issue labels
         uses: actions/github-script@v5
         with:
           script: |
-            const issues = JSON.parse('${{ steps.get-issue-numbers.outputs.result }}')
+            const issues = JSON.parse(${{ needs.get-issue-numbers.outputs.result }})
 
-            console.log(
-              '----------------------',
-              issues,
-              '${{ steps.get-issue-numbers.outputs.result }}',
-              '----------------------'
-            )
+            for (const issue of issues) {
+              // Get current labels
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issue)
+              })
+
+              // Prepare new labels
+              let newLabels = currentLabels.map(label => label.name)
+              newLabels = newLabels.filter(label => label !== 'status: to do' && label !== 'status: in progress')
+              newLabels.push('status: in review')
+
+              // Update labels
+              try {
+                await github.rest.issues.setLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issue),
+                  labels: newLabels
+                })
+                console.log(`Labels updated successfully for issue ${issue}`)
+              } catch (error) {
+                console.error(`Error updating labels for issue ${issue}: ${error.message}`)
+                core.setFailed(error.message)
+              }
+            }
