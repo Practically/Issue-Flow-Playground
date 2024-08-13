@@ -23,8 +23,6 @@ jobs:
           script: |
             const commits = context.payload.commits
 
-            console.log(`Commits: ${commits}`)
-
             const issueNumbers = []
             for (const commit of commits) {
               const refMatches = commit.message.match(/(Ref: #|Fixes Issue: #)(\d+(\s#\d+)*)/gi)
